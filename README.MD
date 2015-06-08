@@ -1,1 +1,1 @@
-## A think python wrapper for zing chart javascript library
+## A thin python wrapper for zingchart javascript library
