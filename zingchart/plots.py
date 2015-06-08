@@ -40,3 +40,7 @@ def boxplot(data, kind="boxplot", options = None, plot_options = None):
 	if plot_options:
 		plot_data.update(plot_options)
 	return plot_data
+
+
+def scatterplot(data, makers = None, plot_options = None):
+	pass
