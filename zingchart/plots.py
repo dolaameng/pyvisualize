@@ -76,32 +76,51 @@ def scatterplot(data, xname, yname, markers = None, colors = None, plot_options 
         plot_data.update(plot_options)
     return plot_data
 
-def histogram(data, bins=None, plot_options=None):
+def histogram(data, bins=10, plot_options=None):
     """
-    data: array_like. E.g. pd.series or list
+    data: array_like. E.g. pd.series or list; 
+          OR pd.DataFrame (for tabular data) 
+          OR dict of {seriesName: seriesData} (for irregular shape data)
     bins: int or sequence of scalars, optional
     plot_options: other options to zing chart
 
     return plot_data: json for zingchart plot data 
     """
-    if bins is None:
-        bins = 10
-    hist = np.histogram(data, bins=bins)
+    if isinstance(data, (list, np.ndarray, pd.Series)): 
+        hists = {"Histogram": np.histogram(data, bins=bins)}
 
+    elif isinstance(data, pd.DataFrame):
+        hists = data._get_numeric_data().apply(np.histogram, axis=0, bins=bins)
+
+    elif isinstance(data, dict):
+        hists = dict((k, np.histogram(v, bins=bins)) for k, v in data.iteritems())
+    
     plot_data = {
-          "type": "bar" 
-        , "series": [{"values": hist[0].tolist()}]
-        , "scale-x": {"values": np.around(hist[1], decimals=2).tolist()} 
-        , "tooltip": {
-            "text": "<b>Value: %k</b><br><b>Count: %v</b>",
-            "font-size": "12px",
-            "text-align": "left",
-            "border-radius": "8px",
-            "padding": "5px 5px",
-            # "background-color": "#212339",
-            "alpha": 0.9,
+        "background-color": "#3F5666",
+        "graphset": []
+    }
+    for name in hists.keys():
+        sub_plot_data = {
+            "type": "bar", 
+            "series": [{"values": hists[name][0].tolist()}],
+            "scale-x": {"values": np.around(hists[name][1], decimals=2).tolist()}, 
+            "tooltip": {
+                "text": "<b>Value: %k</b><br><b>Count: %v</b>",
+                "font-size": "12px",
+                "text-align": "left",
+                "border-radius": "8px",
+                "padding": "5px 5px",
+                # "background-color": "#212339",
+                "alpha": 0.9
+            },
+            "title": {
+                "text": name, 
+                "background-color":"none",
+                "font-color":"#000000"
             }
         }
+        plot_data["graphset"].append(sub_plot_data)
+
     if plot_options:
         plot_data.update(plot_options)
     return plot_data
