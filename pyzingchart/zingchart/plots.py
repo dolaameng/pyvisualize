@@ -96,13 +96,16 @@ def histogram(data, bins=10, plot_options=None):
         hists = dict((k, np.histogram(v, bins=bins)) for k, v in data.iteritems())
     
     plot_data = {
-        "background-color": "#3F5666",
+        # "background-color": "#3F5666",
         "graphset": []
     }
     for name in hists.keys():
         sub_plot_data = {
             "type": "bar", 
-            "series": [{"values": hists[name][0].tolist()}],
+            "series": [{
+                        "values": hists[name][0].tolist(), 
+                        "background-color": "#85d6e4"
+            }],
             "scale-x": {"values": np.around(hists[name][1], decimals=2).tolist()}, 
             "tooltip": {
                 "text": "<b>Value: %k</b><br><b>Count: %v</b>",
