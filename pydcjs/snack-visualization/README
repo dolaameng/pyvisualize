@@ -1,0 +1,5 @@
+## A case study on different chart types from dc.js
+
+- The data is downloaded from [here](https://github.com/jeroenooms/lausd-data/tree/gh-pages/snack), which is orginally from LAUSD kids.
+- The data was modified for case study.
+- run code by `python -m SimpleHTTPServer`
