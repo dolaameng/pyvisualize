@@ -16,15 +16,17 @@
 		2. one-D categorical (or binned numerical) horizontal bar - for large value set (neighborhood)
 		3. one-D categorical vs time - stacked bar  (withwho vs date)
 		4. contigency table of categorical vs categorical - heatmap (location vs period occurances)
-		5. one-D numerical vs time (avg. healthlevel vs date)
-		6. two-D numerical scatter plot (latitude vs longitude - i know it is stupid) 
-		7. categorical vs two numerical : bubble chart - bubble(categorical), radius (group size), x (statics on a numerical), y (statistics on a numerical) - cost vs (latitude, longitude)
-		8. one categorical variable vs one numerical variable boxplot (healthlevel v.s. withwho) -->
+		5. pivot table of aggreagated_numerical on (categorical vs categorical) - heatmap
+		6. one-D numerical vs time (avg. healthlevel vs date)
+		7. two-D numerical scatter plot (latitude vs longitude - i know it is stupid) 
+		8. categorical vs two numerical : bubble chart - bubble(categorical), radius (group size), x (statics on a numerical), y (statistics on a numerical) - cost vs (latitude, longitude)
+		9. one categorical variable vs one numerical variable boxplot (healthlevel v.s. withwho) -->
 
 	<div id="location-bar"><h3>Distribution of Categorical Variable</h3></div>
 	<div id="neighorhood-row"><h3>Row Chart for disbutrion of many-value categorical</h3></div>
 	<div id="withwho-area-daily"><h3>Distribution of Categorical along Time</h3></div>
 	<div id="location-period-hm"><h3>Cooccurance table of two categorical variables</h3></div>
+	<div id="avghealth-location-period-hm"><h3>Another heatmap-Pivot Table of avg healthlevel</h3></div>
 	<div id="healthlevel-daily"><h3>Numerical variable along time</h3></div>
 	<div id="lat-lon-scatter"><h3>Scatter of two numerical variables</h3></div>
 	<div id="cost-lat-lon-bubble"><h3>Bubble of two numerical variables grouped by a categorical variable</h3></div>
@@ -41,7 +43,7 @@
 
 		// currently supported aggregation functions
 		var aggfuns = {
-			"avg": {
+			"average": {
 				// reduce add
 				"add": function (feature) {
 					return function (p, v) {
@@ -81,6 +83,24 @@
 				}
 				// reduce init
 				, "init": function (feature) {return function () {return {result: 0.0};} }
+			}
+			, "count": {
+				// reduce add
+				"add": function (feature) {
+					return function (p, v) {
+						p.result +=  1;
+						return p;
+					};
+				}
+				// reduce remove
+				, "remove": function (feature) {
+					return function (p, v) {
+						p.result -=  1;
+						return p;
+					};
+				}
+				// reduce init
+				, "init": function (feature) {return function () {return {result: 0};} }
 			}
 		};
 
@@ -191,27 +211,33 @@
 		// chart 4 - location period heatmap
 		var minmax_value = function (group) {
 			// assume group is ordered by value
-			var xs = group.top(Infinity);
-			return [xs[xs.length - 1].value, xs[0].value];
-		}
+			var xs = group.order(function (p) {return p.result;}).top(Infinity);
+			return [xs[xs.length - 1].value.result, xs[0].value.result];
+		};
 		options["#location-period-hm"] = {
 			anchor: "#location-period-hm"
 			, colum_feature: "location"
 			, index_feature: "period"
-			//, feature: ["location", "period"]
-			, width: 600
+			, value_feature: null
+			, aggfun: "count"
+			, width: 500
 			, height: 300
 			, margins: {top: 10, right: 50, bottom: 30, left: 100}
-			, xAxisLabel: "Location"
-			, yAxisLabel: "Period"
-			, colorRange: ["#e5ffe5", "green"]
+			, colorRange: ["#95ff95", "green"]
 		};
 		charts["#location-period-hm"] = dc.heatMap(options["#location-period-hm"].anchor);
 		dims["#location-period-hm"] = ndx.dimension(function (d) {
 			return [d[options["#location-period-hm"].colum_feature], 
 					d[options["#location-period-hm"].index_feature]];
 		});
-		groups["#location-period-hm"] = dims["#location-period-hm"].group();
+		groups["#location-period-hm"] = dims["#location-period-hm"].group().reduce(
+			// reduce add
+			aggfuns[options["#location-period-hm"].aggfun].add(options["#location-period-hm"].value_feature)
+			// reduce remove
+			, aggfuns[options["#location-period-hm"].aggfun].remove(options["#location-period-hm"].value_feature)
+			// reduce init
+			, aggfuns[options["#location-period-hm"].aggfun].init(options["#location-period-hm"].value_feature)
+		);
 
 		charts["#location-period-hm"]
 			.width(options["#location-period-hm"].width)
@@ -221,19 +247,64 @@
 			.group(groups["#location-period-hm"])
 			.keyAccessor(function (kv) {return kv.key[0];})
 			.valueAccessor(function (kv) {return kv.key[1];})
-			.colorAccessor(function (kv) {return kv.value;})
+			.colorAccessor(function (kv) {return kv.value.result;})
 			.renderLabel(true)
 			.colors(d3.scale.linear().domain(minmax_value(groups["#location-period-hm"])).range(options["#location-period-hm"].colorRange))
-			.title(function(kv) {return kv.value;})//tooltip
+			.title(function(kv) {return kv.value.result;})  //tooltip
+			;
+
+		// chart 5 - avghealth-location-period-hm
+		var minmax_value = function (group) {
+			// assume group is ordered by value
+			var xs = group.order(function (p) {return p.result;}).top(Infinity);
+			return [xs[xs.length - 1].value.result, xs[0].value.result];
+		};
+		options["#avghealth-location-period-hm"] = {
+			anchor: "#avghealth-location-period-hm"
+			, colum_feature: "location"
+			, index_feature: "period"
+			, value_feature: "healthlevel"
+			, aggfun: "average"
+			, width: 500
+			, height: 300
+			, margins: {top: 10, right: 50, bottom: 30, left: 100}
+			, colorRange: ["#9595ff", "#0000ff"]
+		};
+		charts["#avghealth-location-period-hm"] = dc.heatMap(options["#avghealth-location-period-hm"].anchor);
+		dims["#avghealth-location-period-hm"] = ndx.dimension(function (d) {
+			return [d[options["#avghealth-location-period-hm"].colum_feature], 
+					d[options["#avghealth-location-period-hm"].index_feature]];
+		});
+		groups["#avghealth-location-period-hm"] = dims["#avghealth-location-period-hm"].group().reduce(
+			// reduce add
+			aggfuns[options["#avghealth-location-period-hm"].aggfun].add(options["#avghealth-location-period-hm"].value_feature)
+			// reduce remove
+			, aggfuns[options["#avghealth-location-period-hm"].aggfun].remove(options["#avghealth-location-period-hm"].value_feature)
+			// reduce init
+			, aggfuns[options["#avghealth-location-period-hm"].aggfun].init(options["#avghealth-location-period-hm"].value_feature)
+		);
+
+		charts["#avghealth-location-period-hm"]
+			.width(options["#avghealth-location-period-hm"].width)
+			.height(options["#avghealth-location-period-hm"].height)
+			.margins(options["#avghealth-location-period-hm"].margins)
+			.dimension(dims["#avghealth-location-period-hm"])
+			.group(groups["#avghealth-location-period-hm"])
+			.keyAccessor(function (kv) {return kv.key[0];})
+			.valueAccessor(function (kv) {return kv.key[1];})
+			.colorAccessor(function (kv) {return kv.value.result;})
+			.renderLabel(true)
+			.colors(d3.scale.linear().domain(minmax_value(groups["#avghealth-location-period-hm"])).range(options["#avghealth-location-period-hm"].colorRange))
+			.title(function(kv) {return kv.value.result;})  //tooltip
 			;
 
 
-		// chart 5 - health level time series 
+		// chart 6 - health level time series 
 		options["#healthlevel-daily"] = {
 			anchor: "#healthlevel-daily"
 			, timefeature: "date"
 			, feature: "healthlevel"
-			, aggfun: "avg" // supported by the aggfuns defined at the top
+			, aggfun: "average" // supported by the aggfuns defined at the top
 			, width: 600
 			, height: 400
 			, xAxisLabel: "Daily"
@@ -263,6 +334,8 @@
 			.xAxisLabel(options["#healthlevel-daily"].xAxisLabel)
 			.yAxisLabel(options["#healthlevel-daily"].yAxisLabel)
 			;
+
+		// chart 7 - lat-lon-scatter
 		
 		dc.renderAll();
 	});
