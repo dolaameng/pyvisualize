@@ -219,6 +219,7 @@
 			, colum_feature: "location"
 			, index_feature: "period"
 			, value_feature: null
+			, tooltip_prefix: "frequency:"
 			, aggfun: "count"
 			, width: 500
 			, height: 300
@@ -250,7 +251,7 @@
 			.colorAccessor(function (kv) {return kv.value.result;})
 			.renderLabel(true)
 			.colors(d3.scale.linear().domain(minmax_value(groups["#location-period-hm"])).range(options["#location-period-hm"].colorRange))
-			.title(function(kv) {return kv.value.result;})  //tooltip
+			.title(function(kv) {return options["#location-period-hm"].tooltip_prefix+kv.value.result;})  //tooltip
 			;
 
 		// chart 5 - avghealth-location-period-hm
@@ -264,6 +265,7 @@
 			, colum_feature: "location"
 			, index_feature: "period"
 			, value_feature: "healthlevel"
+			, tooltip_prefix: "avg health:"
 			, aggfun: "average"
 			, width: 500
 			, height: 300
@@ -295,7 +297,7 @@
 			.colorAccessor(function (kv) {return kv.value.result;})
 			.renderLabel(true)
 			.colors(d3.scale.linear().domain(minmax_value(groups["#avghealth-location-period-hm"])).range(options["#avghealth-location-period-hm"].colorRange))
-			.title(function(kv) {return kv.value.result;})  //tooltip
+			.title(function(kv) {return options["#avghealth-location-period-hm"].tooltip_prefix+kv.value.result;})  //tooltip
 			;
 
 
