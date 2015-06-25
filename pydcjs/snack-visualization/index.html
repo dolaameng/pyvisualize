@@ -1,21 +1,146 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Showing All Types of Charts Supported by dc.js</title>
+	<title>Demo of Typical Charts Supported by dc.js</title>
 
 	<link rel="stylesheet" type="text/css" href="http://dc-js.github.io/dc.js/css/dc.css">
 	<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+
+</head>
+<body>
+	
+	<h1>Demo of Typical Charts Supported by dc.js - with minimum settings, on <a href="https://github.com/jeroenooms/lausd-data/tree/gh-pages/snack">snack data</a> </h1>
+
+	<!-- Plotting Area -->
+	<!--1. one-D categorical bar (location) - never use a Bar!
+		2. one-D categorical (or binned numerical) horizontal bar - for large value set (neighborhood)
+		3. one-D categorical vs time - stacked bar  (withwho vs hour)
+		4. contigency table of categorical vs categorical - heatmap (location vs period occurances)
+		5. one-D numerical vs time (avg. healthlevel vs hour)
+		6. two-D numerical scatter plot (latitude vs longitude - i know it is stupid) 
+		7. categorical vs two numerical : bubble chart - bubble(categorical), radius (group size), x (statics on a numerical), y (statistics on a numerical) - cost vs (latitude, longitude)
+		8. one categorical variable vs one numerical variable boxplot (healthlevel v.s. withwho) -->
+
+	<div id="location-bar"><h3>Distribution of Categorical Variable</h3></div>
+	<div id="neighorhood-row"><h3>Row Chart for disbutrion of many-value categorical</h3></div>
+	<div id="withwho-area-daily"><h3>Distribution of Categorical along Time</h3></div>
+	<div id="location-period-hm"><h3>Cooccurance table of two categorical variables</h3></div>
+	<div id="healthlevel-daily"><h3>Numerical variable along time</h3></div>
+	<div id="lat-lon-scatter"><h3>Scatter of two numerical variables</h3></div>
+	<div id="cost-lat-lon-bubble"><h3>Bubble of two numerical variables grouped by a categorical variable</h3></div>
+	<div id="healthlevel-withwho-box"><h3>Boxplot of Categorical v.s. Numerical</h3></div>
 
 	<script type="text/javascript" src="http://dc-js.github.io/dc.js/js/d3.js"></script>
 	<script type="text/javascript" src="http://dc-js.github.io/dc.js/js/crossfilter.js"></script>
 	<script type="text/javascript" src="http://dc-js.github.io/dc.js/js/dc.js"></script>
 
-</head>
-<body>
-	
-	<h1>Showing All Types of Charts Supported by dc.js, on <a href="https://github.com/jeroenooms/lausd-data/tree/gh-pages/snack">snack data</a> </h1>
+	<script type="text/javascript">
+	d3.json("modified_snacks.json", function (err, data) {
 
-	<div id="">
+		var ndx = crossfilter(data);
 
+		var charts = {},
+			dims = {},
+			groups = {},
+			options = {};
+
+		// chart 1 - bar chart
+		var locationBarChartOption = {
+			anchor: "#location-bar"
+			, feature: "location"
+			, width: 600
+			, height: 300
+			, xAxisLabel: "Location"
+			, yAxisLabel: 'Frequency'
+		};
+		var locationBarChart = dc.barChart(locationBarChartOption.anchor);
+		var locationBarChartDim = ndx.dimension(function (d) {return d[locationBarChartOption.feature];});
+		var locationBarChartGroup = locationBarChartDim.group();
+
+		locationBarChart
+			.width(locationBarChartOption.width).height(locationBarChartOption.height)
+			.dimension(locationBarChartDim)
+			.group(locationBarChartGroup)
+			.x(d3.scale.ordinal())
+			.xUnits(dc.units.ordinal)
+			.xAxisLabel(locationBarChartOption.xAxisLabel)
+			.yAxisLabel(locationBarChartOption.yAxisLabel);
+
+		// chart 2 - row chart
+		var neighborhoodRowChartOption = {
+			anchor: "#neighorhood-row"
+			, feature: "neighborhood"
+			, width: 800
+			, height: 800
+			// doesnt support xAxisLabel and yAxisLabel
+		};
+		var neighborhoodRowChart = dc.rowChart(neighborhoodRowChartOption.anchor);
+		var neighborhoodRowChartDim = ndx.dimension(function (d) {return d[neighborhoodRowChartOption.feature];});
+		var neighborhoodRowChartGroup = neighborhoodRowChartDim.group();
+
+		neighborhoodRowChart
+			.width(neighborhoodRowChartOption.width).height(neighborhoodRowChartOption.height)
+			.dimension(neighborhoodRowChartDim)
+			.group(neighborhoodRowChartGroup)
+			.elasticX(true);
+
+		// chart 3 - time series area chart
+		var withwhoAreaDailyChartOption = {
+			anchor: "#withwho-area-daily"
+			, timefeature: "date"
+			, feature: "withwho"
+			, feature_values: ["Alone", "Family", "Friends", "Classmates", "Other", "Co-workers"]
+			, width: 800
+			, height: 300
+			, margins: {top: 10, right: 50, bottom: 30, left: 100}
+			, xAxisLabel: "Daily"
+			, yAxisLabel: "With Who Dist."
+		};
+		var withwhoAreaDailyChart = dc.lineChart(withwhoAreaDailyChartOption.anchor);
+		var withwhoAreaDailyChartDim = ndx.dimension(function (d) {
+			return new Date(d[withwhoAreaDailyChartOption.timefeature]); 
+		});
+		var withwhoAreaDailyChartGroup = withwhoAreaDailyChartDim.group().reduce(
+			// reduce add
+			function (p, v) {
+				var f = withwhoAreaDailyChartOption.feature; 
+				p[v[f]] = (p[v[f]] || 0) + 1;
+				return p;
+			}
+			// reduce remove
+			, function (p, v) {
+				var f = withwhoAreaDailyChartOption.feature; 
+				p[v[f]] = (p[v[f]] || 0) - 1;
+				return p;
+			}
+			// reduce init
+			, function () {
+				return {};
+			}
+		);
+		var minDate = new Date(withwhoAreaDailyChartDim.bottom(1)[0][withwhoAreaDailyChartOption.timefeature]);
+		var maxDate = new Date(withwhoAreaDailyChartDim.top(1)[0][withwhoAreaDailyChartOption.timefeature]);
+		var select_stack = function (i) {return function(kv) {return (kv.value[i] || 0); } };
+		withwhoAreaDailyChart
+			.width(withwhoAreaDailyChartOption.width).height(withwhoAreaDailyChartOption.height)
+			.dimension(withwhoAreaDailyChartDim)
+			.group(withwhoAreaDailyChartGroup, withwhoAreaDailyChartOption.feature_values[0], select_stack(withwhoAreaDailyChartOption.feature_values[0]))
+			.margins(withwhoAreaDailyChartOption.margins)
+			.x(d3.time.scale().domain([minDate, maxDate]))
+			.renderArea(true)
+			.elasticY(true)
+			.xAxisLabel(withwhoAreaDailyChartOption.xAxisLabel)
+			.yAxisLabel(withwhoAreaDailyChartOption.yAxisLabel)
+			.legend(dc.legend());
+		for (var i = 1; i < withwhoAreaDailyChartOption.feature_values.length; ++i) {
+			withwhoAreaDailyChart.stack(withwhoAreaDailyChartGroup, withwhoAreaDailyChartOption.feature_values[i], 
+				select_stack(withwhoAreaDailyChartOption.feature_values[i]));
+		}
+
+		// chart 4 - location period heatmap
+		
+		dc.renderAll();
+	});
+	</script>
 </body>
 </html>
