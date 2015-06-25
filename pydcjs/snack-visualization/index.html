@@ -109,7 +109,8 @@
 			.x(d3.scale.ordinal())
 			.xUnits(dc.units.ordinal)
 			.xAxisLabel(options["#location-bar"].xAxisLabel)
-			.yAxisLabel(options["#location-bar"].yAxisLabel);
+			.yAxisLabel(options["#location-bar"].yAxisLabel)
+			;
 
 		// chart 2 - row chart
 		options["#neighorhood-row"] = {
@@ -127,7 +128,8 @@
 			.width(options["#neighorhood-row"].width).height(options["#neighorhood-row"].height)
 			.dimension(dims["#neighorhood-row"])
 			.group(groups["#neighorhood-row"])
-			.elasticX(true);
+			.elasticX(true)
+			;
 
 		// chart 3 - time series area chart
 		options["#withwho-area-daily"] = {
@@ -179,13 +181,51 @@
 			.elasticY(true)
 			.xAxisLabel(options["#withwho-area-daily"].xAxisLabel)
 			.yAxisLabel(options["#withwho-area-daily"].yAxisLabel)
-			.legend(dc.legend());
+			.legend(dc.legend())
+			;
 		for (var i = 1; i < feature_values.length; ++i) {
 			charts["#withwho-area-daily"].stack(groups["#withwho-area-daily"], feature_values[i], 
 				feature_values[i]);
 		}
 
 		// chart 4 - location period heatmap
+		var minmax_value = function (group) {
+			// assume group is ordered by value
+			var xs = group.top(Infinity);
+			return [xs[xs.length - 1].value, xs[0].value];
+		}
+		options["#location-period-hm"] = {
+			anchor: "#location-period-hm"
+			, colum_feature: "location"
+			, index_feature: "period"
+			//, feature: ["location", "period"]
+			, width: 600
+			, height: 300
+			, margins: {top: 10, right: 50, bottom: 30, left: 100}
+			, xAxisLabel: "Location"
+			, yAxisLabel: "Period"
+			, colorRange: ["#e5ffe5", "green"]
+		};
+		charts["#location-period-hm"] = dc.heatMap(options["#location-period-hm"].anchor);
+		dims["#location-period-hm"] = ndx.dimension(function (d) {
+			return [d[options["#location-period-hm"].colum_feature], 
+					d[options["#location-period-hm"].index_feature]];
+		});
+		groups["#location-period-hm"] = dims["#location-period-hm"].group();
+
+		charts["#location-period-hm"]
+			.width(options["#location-period-hm"].width)
+			.height(options["#location-period-hm"].height)
+			.margins(options["#location-period-hm"].margins)
+			.dimension(dims["#location-period-hm"])
+			.group(groups["#location-period-hm"])
+			.keyAccessor(function (kv) {return kv.key[0];})
+			.valueAccessor(function (kv) {return kv.key[1];})
+			.colorAccessor(function (kv) {return kv.value;})
+			.renderLabel(true)
+			.colors(d3.scale.linear().domain(minmax_value(groups["#location-period-hm"])).range(options["#location-period-hm"].colorRange))
+			.title(function(kv) {return kv.value;})//tooltip
+			;
 
 
 		// chart 5 - health level time series 
@@ -221,7 +261,8 @@
 			.x(d3.time.scale().domain([minDate, maxDate]))
 			.elasticY(true)
 			.xAxisLabel(options["#healthlevel-daily"].xAxisLabel)
-			.yAxisLabel(options["#healthlevel-daily"].yAxisLabel);
+			.yAxisLabel(options["#healthlevel-daily"].yAxisLabel)
+			;
 		
 		dc.renderAll();
 	});
