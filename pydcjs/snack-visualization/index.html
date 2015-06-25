@@ -45,7 +45,7 @@
 			options = {};
 
 		// chart 1 - bar chart
-		var locationBarChartOption = {
+		options["#location-bar"] = {
 			anchor: "#location-bar"
 			, feature: "location"
 			, width: 600
@@ -53,63 +53,63 @@
 			, xAxisLabel: "Location"
 			, yAxisLabel: 'Frequency'
 		};
-		var locationBarChart = dc.barChart(locationBarChartOption.anchor);
-		var locationBarChartDim = ndx.dimension(function (d) {return d[locationBarChartOption.feature];});
-		var locationBarChartGroup = locationBarChartDim.group();
+		charts["#location-bar"] = dc.barChart(options["#location-bar"].anchor);
+		dims["#location-bar"] = ndx.dimension(function (d) {return d[options["#location-bar"].feature];});
+		groups["#location-bar"] = dims["#location-bar"].group();
 
-		locationBarChart
-			.width(locationBarChartOption.width).height(locationBarChartOption.height)
-			.dimension(locationBarChartDim)
-			.group(locationBarChartGroup)
+		charts["#location-bar"]
+			.width(options["#location-bar"].width).height(options["#location-bar"].height)
+			.dimension(dims["#location-bar"])
+			.group(groups["#location-bar"])
 			.x(d3.scale.ordinal())
 			.xUnits(dc.units.ordinal)
-			.xAxisLabel(locationBarChartOption.xAxisLabel)
-			.yAxisLabel(locationBarChartOption.yAxisLabel);
+			.xAxisLabel(options["#location-bar"].xAxisLabel)
+			.yAxisLabel(options["#location-bar"].yAxisLabel);
 
 		// chart 2 - row chart
-		var neighborhoodRowChartOption = {
+		options["#neighorhood-row"] = {
 			anchor: "#neighorhood-row"
 			, feature: "neighborhood"
 			, width: 800
 			, height: 800
 			// doesnt support xAxisLabel and yAxisLabel
 		};
-		var neighborhoodRowChart = dc.rowChart(neighborhoodRowChartOption.anchor);
-		var neighborhoodRowChartDim = ndx.dimension(function (d) {return d[neighborhoodRowChartOption.feature];});
-		var neighborhoodRowChartGroup = neighborhoodRowChartDim.group();
+		charts["#neighorhood-row"] = dc.rowChart(options["#neighorhood-row"].anchor);
+		dims["#neighorhood-row"] = ndx.dimension(function (d) {return d[options["#neighorhood-row"].feature];});
+		groups["#neighorhood-row"] = dims["#neighorhood-row"].group();
 
-		neighborhoodRowChart
-			.width(neighborhoodRowChartOption.width).height(neighborhoodRowChartOption.height)
-			.dimension(neighborhoodRowChartDim)
-			.group(neighborhoodRowChartGroup)
+		charts["#neighorhood-row"]
+			.width(options["#neighorhood-row"].width).height(options["#neighorhood-row"].height)
+			.dimension(dims["#neighorhood-row"])
+			.group(groups["#neighorhood-row"])
 			.elasticX(true);
 
 		// chart 3 - time series area chart
-		var withwhoAreaDailyChartOption = {
+		options["#withwho-area-daily"] = {
 			anchor: "#withwho-area-daily"
 			, timefeature: "date"
 			, feature: "withwho"
-			, feature_values: ["Alone", "Family", "Friends", "Classmates", "Other", "Co-workers"]
+			//, feature_values: ["Alone", "Family", "Friends", "Classmates", "Other", "Co-workers"]
 			, width: 800
 			, height: 300
 			, margins: {top: 10, right: 50, bottom: 30, left: 100}
 			, xAxisLabel: "Daily"
 			, yAxisLabel: "With Who Dist."
 		};
-		var withwhoAreaDailyChart = dc.lineChart(withwhoAreaDailyChartOption.anchor);
-		var withwhoAreaDailyChartDim = ndx.dimension(function (d) {
-			return new Date(d[withwhoAreaDailyChartOption.timefeature]); 
+		charts["#withwho-area-daily"] = dc.lineChart(options["#withwho-area-daily"].anchor);
+		dims["#withwho-area-daily"] = ndx.dimension(function (d) {
+			return new Date(d[options["#withwho-area-daily"].timefeature]); 
 		});
-		var withwhoAreaDailyChartGroup = withwhoAreaDailyChartDim.group().reduce(
+		groups["#withwho-area-daily"] = dims["#withwho-area-daily"].group().reduce(
 			// reduce add
 			function (p, v) {
-				var f = withwhoAreaDailyChartOption.feature; 
+				var f = options["#withwho-area-daily"].feature; 
 				p[v[f]] = (p[v[f]] || 0) + 1;
 				return p;
 			}
 			// reduce remove
 			, function (p, v) {
-				var f = withwhoAreaDailyChartOption.feature; 
+				var f = options["#withwho-area-daily"].feature; 
 				p[v[f]] = (p[v[f]] || 0) - 1;
 				return p;
 			}
@@ -118,23 +118,27 @@
 				return {};
 			}
 		);
-		var minDate = new Date(withwhoAreaDailyChartDim.bottom(1)[0][withwhoAreaDailyChartOption.timefeature]);
-		var maxDate = new Date(withwhoAreaDailyChartDim.top(1)[0][withwhoAreaDailyChartOption.timefeature]);
+		var minDate = new Date(dims["#withwho-area-daily"].bottom(1)[0][options["#withwho-area-daily"].timefeature]);
+		var maxDate = new Date(dims["#withwho-area-daily"].top(1)[0][options["#withwho-area-daily"].timefeature]);
+		var feature_values = [];
+		ndx.dimension(function (d) {return d[options["#withwho-area-daily"].feature];})
+								.group().top(Infinity).forEach(function(kv){feature_values.push(kv.key);});
+		console.log(feature_values);
 		var select_stack = function (i) {return function(kv) {return (kv.value[i] || 0); } };
-		withwhoAreaDailyChart
-			.width(withwhoAreaDailyChartOption.width).height(withwhoAreaDailyChartOption.height)
-			.dimension(withwhoAreaDailyChartDim)
-			.group(withwhoAreaDailyChartGroup, withwhoAreaDailyChartOption.feature_values[0], select_stack(withwhoAreaDailyChartOption.feature_values[0]))
-			.margins(withwhoAreaDailyChartOption.margins)
+		charts["#withwho-area-daily"]
+			.width(options["#withwho-area-daily"].width).height(options["#withwho-area-daily"].height)
+			.dimension(dims["#withwho-area-daily"])
+			.group(groups["#withwho-area-daily"], feature_values[0], select_stack(feature_values[0]))
+			.margins(options["#withwho-area-daily"].margins)
 			.x(d3.time.scale().domain([minDate, maxDate]))
 			.renderArea(true)
 			.elasticY(true)
-			.xAxisLabel(withwhoAreaDailyChartOption.xAxisLabel)
-			.yAxisLabel(withwhoAreaDailyChartOption.yAxisLabel)
+			.xAxisLabel(options["#withwho-area-daily"].xAxisLabel)
+			.yAxisLabel(options["#withwho-area-daily"].yAxisLabel)
 			.legend(dc.legend());
-		for (var i = 1; i < withwhoAreaDailyChartOption.feature_values.length; ++i) {
-			withwhoAreaDailyChart.stack(withwhoAreaDailyChartGroup, withwhoAreaDailyChartOption.feature_values[i], 
-				select_stack(withwhoAreaDailyChartOption.feature_values[i]));
+		for (var i = 1; i < feature_values.length; ++i) {
+			charts["#withwho-area-daily"].stack(groups["#withwho-area-daily"], feature_values[i], 
+				feature_values[i]);
 		}
 
 		// chart 4 - location period heatmap
