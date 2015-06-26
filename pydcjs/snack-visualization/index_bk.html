@@ -21,8 +21,7 @@
 		7. two-D numerical scatter plot (latitude vs longitude - i know it is stupid) 
 		8. two-D numerical scatter plot (hour vs healthlevel - again stupid but just for plotting purpose)
 		9. categorical vs two numerical : bubble chart - bubble(categorical), radius (group size), x (statics on a numerical), y (statistics on a numerical) - cost vs (avg. latitude, avg. longitude)
-		10. one categorical variable vs one numerical variable boxplot (healthlevel v.s. withwho) 
-		11. data table-->
+		10. one categorical variable vs one numerical variable boxplot (healthlevel v.s. withwho) -->
 
 	<div id="location-bar"><h3>Distribution of Categorical Variable</h3></div>
 	<div id="neighorhood-row"><h3>Row Chart for disbutrion of many-value categorical</h3></div>
@@ -34,7 +33,6 @@
 	<div id="health-hour-scatter"><h3>Scatter of two numerical variables - healthlevel,hour</h3></div>
 	<div id="cost-lat-lon-bubble"><h3>Bubble of two numerical variables grouped by a categorical variable</h3></div>
 	<div id="healthlevel-withwho-box"><h3>Boxplot of Categorical v.s. Numerical</h3></div>
-	<table id="data-table"></table>
 
 	<script type="text/javascript" src="http://dc-js.github.io/dc.js/js/d3.js"></script>
 	<script type="text/javascript" src="http://dc-js.github.io/dc.js/js/crossfilter.js"></script>
@@ -106,61 +104,6 @@
 				// reduce init
 				, "init": function (feature) {return function () {return {result: 0};} }
 			}
-			, "combine": {
-				"add": function (features, aggs) {
-					add_fns = [];
-					for (var i = 0; i < features.length; ++i) {
-						add_fns.push(aggfuns[aggs[i]]["add"](features[i]));
-					}
-					return function (p, v) {
-						for (var i = 0; i < features.length; ++i) {
-							p[i] = add_fns[i](p[i], v);
-						}
-						return p;
-					};
-				}
-				, "remove": function (features, aggs) {
-					remove_fns = [];
-					for (var i = 0; i < features.length; ++i) {
-						remove_fns.push(aggfuns[aggs[i]]["remove"](features[i]));
-					}
-					return function (p, v) {
-						for (var i = 0; i < features.length; ++i) {
-							p[i] = remove_fns[i](p[i], v);
-						}
-						return p;
-					};
-				}
-				, "init": function (features, aggs) {
-					init_fns = [];
-					for (var i = 0; i < features.length; ++i) {
-						init_fns.push(aggfuns[aggs[i]]["init"](features[i]));
-					}
-					return function () {
-						p = []
-						for (var i = 0; i < features.length; ++i) {
-							p.push( init_fns[i]() );
-						}
-						return p;
-					};
-				}
-			}
-		};
-
-		// color scheme for heatmap, obtained from http://colorbrewer2.org/
-		var colorRangeScheme = {
-			green: ["#e5f5e0", "#00441b"],
-			organge: ["#fee6ce", "#7f2704"],
-			purple: ["#efedf5", "#3f007d"],
-			red: ["#fee0d2", "#67000d"],
-			blue: ["#deebf7", "#08306b"],
-			grey: ["#f0f0f0", "#000000"],
-			yor: ["#ffffcc", "#800026"],
-			bg: ["#e5f5f9", "#00441b"],
-			yg: ["#f7fcb9", "#004529"],
-			yob: ["#fff7bc", "#662506"],
-			or: ["#fee8c8", "#7f0000"],
-			pb: ["#ece7f2", "#023858"]
 		};
 
 		var charts = {},
@@ -274,6 +217,22 @@
 			return [xs[xs.length - 1].value.result, xs[0].value.result];
 		};
 
+		// color scheme for heatmap, obtained from http://colorbrewer2.org/
+		var colorRangeScheme = {
+			green: ["#e5f5e0", "#00441b"],
+			organge: ["#fee6ce", "#7f2704"],
+			purple: ["#efedf5", "#3f007d"],
+			red: ["#fee0d2", "#67000d"],
+			blue: ["#deebf7", "#08306b"],
+			grey: ["#f0f0f0", "#000000"],
+			yor: ["#ffffcc", "#800026"],
+			bg: ["#e5f5f9", "#00441b"],
+			yg: ["#f7fcb9", "#004529"],
+			yob: ["#fff7bc", "#662506"],
+			or: ["#fee8c8", "#7f0000"],
+			pb: ["#ece7f2", "#023858"]
+		};
+
 		options["#location-period-hm"] = {
 			anchor: "#location-period-hm"
 			, colum_feature: "location"
@@ -281,7 +240,7 @@
 			, value_feature: null
 			, tooltip_prefix: "frequency:"
 			, aggfun: "count"
-			, width: 500
+			, width: 550
 			, height: 300
 			, margins: {top: 10, right: 50, bottom: 30, left: 100}
 			, colorRange: colorRangeScheme["green"]
@@ -327,7 +286,7 @@
 			, value_feature: "healthlevel"
 			, tooltip_prefix: "avg health:"
 			, aggfun: "average"
-			, width: 500
+			, width: 550
 			, height: 300
 			, margins: {top: 10, right: 50, bottom: 30, left: 100}
 			, colorRange: colorRangeScheme["purple"]
@@ -400,8 +359,8 @@
 		// chart 7 - lat-lon-scatter
 		options["#lat-lon-scatter"] = {
 			anchor: "#lat-lon-scatter"
-			, x_feature: "latitude"
-			, y_feature: "longitude"
+			, xfeature: "latitude"
+			, yfeature: "longitude"
 			, width: 500
 			, height: 400
 			, xAxisLabel: "latitude"
@@ -409,7 +368,7 @@
 			, margins: {top: 10, right: 50, bottom: 100, left: 100}
 		};
 		charts["#lat-lon-scatter"] = dc.scatterPlot(options["#lat-lon-scatter"].anchor);
-		dims["#lat-lon-scatter"] = ndx.dimension(function (d) {return [+d[options["#lat-lon-scatter"].x_feature], +d[options["#lat-lon-scatter"].y_feature]]});
+		dims["#lat-lon-scatter"] = ndx.dimension(function (d) {return [+d[options["#lat-lon-scatter"].xfeature], +d[options["#lat-lon-scatter"].yfeature]]});
 		groups["#lat-lon-scatter"] = dims["#lat-lon-scatter"].group();
 		charts["#lat-lon-scatter"]
 			.width(options["#lat-lon-scatter"].width).height(options["#lat-lon-scatter"].height)
@@ -452,54 +411,18 @@
 		// chart 9 - cost-lat-lon-bubble
 		options["#cost-lat-lon-bubble"] = {
 			anchor: "#cost-lat-lon-bubble"
-			, group_feature: "cost"
-			, x_feature: "what_wordlen"
-			, y_feature: "why_wordlen"
-			, r_feature: null
-			, x_aggfun: "average"
-			, y_aggfun: "average"
-			, r_aggfun: "count"
+			, group_feature: ""
+			, x_feature: ""
+			, y_feature: ""
+			, x_aggfun: ""
+			, y_aggfun: ""
 			, width: 800
 			, height: 600
-			, max_bubble: 5000
-			, xAxisLabel: "avg what desc"
-			, yAxisLabel: "avg why desc"
+			, xAxisLabel: ""
+			, yAxisLabel: ""
 			, margins: {top: 10, right: 10, bottom: 50, left: 50}
 		};
 		charts["#cost-lat-lon-bubble"] = dc.bubbleChart(options["#cost-lat-lon-bubble"].anchor);
-		dims["#cost-lat-lon-bubble"] = ndx.dimension(function (d) {return d[options["#cost-lat-lon-bubble"].group_feature]});
-		groups["#cost-lat-lon-bubble"] = dims["#cost-lat-lon-bubble"].group().reduce(
-			// reduce add
-			aggfuns["combine"].add([options["#cost-lat-lon-bubble"].x_feature, options["#cost-lat-lon-bubble"].y_feature, options["#cost-lat-lon-bubble"].r_feature], 
-								[options["#cost-lat-lon-bubble"].x_aggfun, options["#cost-lat-lon-bubble"].y_aggfun, options["#cost-lat-lon-bubble"].r_aggfun])
-			// reduce remove
-			, aggfuns["combine"].remove([options["#cost-lat-lon-bubble"].x_feature, options["#cost-lat-lon-bubble"].y_feature, options["#cost-lat-lon-bubble"].r_feature], 
-								[options["#cost-lat-lon-bubble"].x_aggfun, options["#cost-lat-lon-bubble"].y_aggfun, options["#cost-lat-lon-bubble"].r_aggfun])
-			// reduce init
-			, aggfuns["combine"].init([options["#cost-lat-lon-bubble"].x_feature, options["#cost-lat-lon-bubble"].y_feature, options["#cost-lat-lon-bubble"].r_feature], 
-								[options["#cost-lat-lon-bubble"].x_aggfun, options["#cost-lat-lon-bubble"].y_aggfun, options["#cost-lat-lon-bubble"].r_aggfun])
-		);
-		charts["#cost-lat-lon-bubble"]
-			.width(options["#cost-lat-lon-bubble"].width)
-			.height(options["#cost-lat-lon-bubble"].height)
-			.dimension(dims["#cost-lat-lon-bubble"])
-			.group(groups["#cost-lat-lon-bubble"])
-			.keyAccessor(function (kv) {return kv.value[0].result;})
-			.valueAccessor(function (kv) {return kv.value[1].result;})
-			.radiusValueAccessor(function (kv) {return kv.value[2].result;})
-			.x(d3.scale.linear().domain([0, 1]))
-			.y(d3.scale.linear().domain([0, 1]))
-			.r(d3.scale.linear().domain([0, options["#cost-lat-lon-bubble"].max_bubble]))
-			.yAxisPadding(0.5)
-        	.xAxisPadding(0.5)
-			.elasticX(true)
-			.elasticY(true)
-			.xAxisLabel(options["#cost-lat-lon-bubble"].xAxisLabel)
-			.yAxisLabel(options["#cost-lat-lon-bubble"].yAxisLabel)
-			.renderLabel(true)
-			.label(function (kv) {return kv.key;})
-			.legend(dc.legend())
-			;
 
 		// chart 10 - healthlevel-withwho-box
 		options["#healthlevel-withwho-box"] = {
@@ -540,8 +463,6 @@
 			.yAxisLabel(options["#healthlevel-withwho-box"].yAxisLabel)
 			;
 
-		// chart 11 - data time
-		// dont understand the id-column yet - TODO later
 		
 		dc.renderAll();
 	});
