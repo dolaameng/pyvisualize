@@ -14,21 +14,30 @@
 	<!-- Plotting Area -->
 	<!--1. one-D categorical bar (location) - never use a Bar!
 		2. one-D categorical (or binned numerical) horizontal bar - for large value set (neighborhood)
-		3. one-D categorical vs time - stacked bar  (withwho vs hour)
+		3. one-D categorical vs time - stacked bar  (withwho vs date)
 		4. contigency table of categorical vs categorical - heatmap (location vs period occurances)
-		5. one-D numerical vs time (avg. healthlevel vs hour)
-		6. two-D numerical scatter plot (latitude vs longitude - i know it is stupid) 
-		7. categorical vs two numerical : bubble chart - bubble(categorical), radius (group size), x (statics on a numerical), y (statistics on a numerical) - cost vs (latitude, longitude)
-		8. one categorical variable vs one numerical variable boxplot (healthlevel v.s. withwho) -->
+		5. pivot table of aggreagated_numerical on (categorical vs categorical) - heatmap
+		6. one-D numerical vs time (avg. healthlevel vs date)
+		7. two-D numerical scatter plot (latitude vs longitude - i know it is stupid) 
+		8. two-D numerical scatter plot (hour vs healthlevel - again stupid but just for plotting purpose)
+		9. categorical vs two numerical : bubble chart - bubble(categorical), radius (group size), x (statics on a numerical), y (statistics on a numerical) - cost vs (latitude, longitude)
+		10. one categorical variable vs one numerical variable boxplot (healthlevel v.s. withwho) 
+		11. data table-->
 
 	<div id="location-bar"><h3>Distribution of Categorical Variable</h3></div>
 	<div id="neighorhood-row"><h3>Row Chart for disbutrion of many-value categorical</h3></div>
 	<div id="withwho-area-daily"><h3>Distribution of Categorical along Time</h3></div>
 	<div id="location-period-hm"><h3>Cooccurance table of two categorical variables</h3></div>
+	<div id="avghealth-location-period-hm"><h3>Another heatmap-Pivot Table of avg healthlevel</h3></div>
 	<div id="healthlevel-daily"><h3>Numerical variable along time</h3></div>
-	<div id="lat-lon-scatter"><h3>Scatter of two numerical variables</h3></div>
+	<div id="lat-lon-scatter"><h3>Scatter of two numerical variables - lat,lon</h3></div>
+	<div id="health-hour-scatter"><h3>Scatter of two numerical variables - healthlevel,hour</h3></div>
 	<div id="cost-lat-lon-bubble"><h3>Bubble of two numerical variables grouped by a categorical variable</h3></div>
 	<div id="healthlevel-withwho-box"><h3>Boxplot of Categorical v.s. Numerical</h3></div>
+	<div>
+		<table id="data-table" class="table table-hover dc-data-table">				
+		</table>
+	</div>
 
 	<script type="text/javascript" src="http://dc-js.github.io/dc.js/js/d3.js"></script>
 	<script type="text/javascript" src="http://dc-js.github.io/dc.js/js/crossfilter.js"></script>
@@ -38,6 +47,90 @@
 	d3.json("modified_snacks.json", function (err, data) {
 
 		var ndx = crossfilter(data);
+
+		// currently supported aggregation functions
+		var aggfuns = {
+			"average": {
+				// reduce add
+				"add": function (feature) {
+					return function (p, v) {
+						p.result = (p.result*p.count + v[feature]) / (p.count + 1);
+						p.count += 1;
+						return p;
+					};
+				}
+				// reduce remove
+				, "remove": function (feature) {
+					return function (p, v) {
+						if (p.count === 1) {
+							p = {result: 0.0, count: 0};
+						} else {
+							p.result = (p.result*p.count - v[feature]) / (p.count - 1);
+							p.count -= 1;}
+						return p;
+					};
+				}
+				// reduce init
+				, "init": function (feature) {return function () {return {result: 0.0, count: 0};} }
+			}
+			, "sum": {
+				// reduce add
+				"add": function (feature) {
+					return function (p, v) {
+						p.result +=  v[feature];
+						return p;
+					};
+				}
+				// reduce remove
+				, "remove": function (feature) {
+					return function (p, v) {
+						p.result -=  v[feature];
+						return p;
+					};
+				}
+				// reduce init
+				, "init": function (feature) {return function () {return {result: 0.0};} }
+			}
+			, "count": {
+				// reduce add
+				"add": function (feature) {
+					return function (p, v) {
+						p.result +=  1;
+						return p;
+					};
+				}
+				// reduce remove
+				, "remove": function (feature) {
+					return function (p, v) {
+						p.result -=  1;
+						return p;
+					};
+				}
+				// reduce init
+				, "init": function (feature) {return function () {return {result: 0};} }
+			}
+			, "subarray": {
+				// reduce add
+				"add": function (feature) {
+					return function(p,v) {
+				          p.push(v[feature]);
+				          return p;
+				    };
+				}    
+				// reduce remove
+				, "remove": function (feature) {
+					return function(p,v) {
+				          p.splice(p.indexOf(v.Speed), 1);
+				          return p;
+				        };
+				}
+				// reduce init
+				, "init": function (feature) {
+					return function() {
+				          return [];
+				        };} 
+			}
+		};
 
 		var charts = {},
 			dims = {},
@@ -64,7 +157,8 @@
 			.x(d3.scale.ordinal())
 			.xUnits(dc.units.ordinal)
 			.xAxisLabel(options["#location-bar"].xAxisLabel)
-			.yAxisLabel(options["#location-bar"].yAxisLabel);
+			.yAxisLabel(options["#location-bar"].yAxisLabel)
+			;
 
 		// chart 2 - row chart
 		options["#neighorhood-row"] = {
@@ -82,7 +176,8 @@
 			.width(options["#neighorhood-row"].width).height(options["#neighorhood-row"].height)
 			.dimension(dims["#neighorhood-row"])
 			.group(groups["#neighorhood-row"])
-			.elasticX(true);
+			.elasticX(true)
+			;
 
 		// chart 3 - time series area chart
 		options["#withwho-area-daily"] = {
@@ -123,7 +218,6 @@
 		var feature_values = [];
 		ndx.dimension(function (d) {return d[options["#withwho-area-daily"].feature];})
 								.group().top(Infinity).forEach(function(kv){feature_values.push(kv.key);});
-		console.log(feature_values);
 		var select_stack = function (i) {return function(kv) {return (kv.value[i] || 0); } };
 		charts["#withwho-area-daily"]
 			.width(options["#withwho-area-daily"].width).height(options["#withwho-area-daily"].height)
@@ -135,33 +229,61 @@
 			.elasticY(true)
 			.xAxisLabel(options["#withwho-area-daily"].xAxisLabel)
 			.yAxisLabel(options["#withwho-area-daily"].yAxisLabel)
-			.legend(dc.legend());
+			.legend(dc.legend())
+			;
 		for (var i = 1; i < feature_values.length; ++i) {
 			charts["#withwho-area-daily"].stack(groups["#withwho-area-daily"], feature_values[i], 
-				feature_values[i]);
+				select_stack(feature_values[i]));
 		}
 
-		// helper function
-		var extent = function (g) {
-			var gValues = g.top(Infinity);
-			return [gValues[gValues.length - 1].value, gValues[0].value];
-		} 
 		// chart 4 - location period heatmap
+		var minmax_value = function (group) {
+			// assume group is ordered by value
+			var xs = group.order(function (p) {return p.result;}).top(Infinity);
+			return [xs[xs.length - 1].value.result, xs[0].value.result];
+		};
+
+		// color scheme for heatmap, obtained from http://colorbrewer2.org/
+		var colorRangeScheme = {
+			green: ["#e5f5e0", "#00441b"],
+			organge: ["#fee6ce", "#7f2704"],
+			purple: ["#efedf5", "#3f007d"],
+			red: ["#fee0d2", "#67000d"],
+			blue: ["#deebf7", "#08306b"],
+			grey: ["#f0f0f0", "#000000"],
+			yor: ["#ffffcc", "#800026"],
+			bg: ["#e5f5f9", "#00441b"],
+			yg: ["#f7fcb9", "#004529"],
+			yob: ["#fff7bc", "#662506"],
+			or: ["#fee8c8", "#7f0000"],
+			pb: ["#ece7f2", "#023858"]
+		};
+
 		options["#location-period-hm"] = {
 			anchor: "#location-period-hm"
-			, feature: ["location", "period"]
-			, width: 600
+			, colum_feature: "location"
+			, index_feature: "period"
+			, value_feature: null
+			, tooltip_prefix: "frequency:"
+			, aggfun: "count"
+			, width: 550
 			, height: 300
 			, margins: {top: 10, right: 50, bottom: 30, left: 100}
-			, xAxisLabel: "Location"
-			, yAxisLabel: "Period"
-			, colorRange: ["#e5ffe5", "green"]
+			, colorRange: colorRangeScheme["green"]
 		};
 		charts["#location-period-hm"] = dc.heatMap(options["#location-period-hm"].anchor);
 		dims["#location-period-hm"] = ndx.dimension(function (d) {
-			return [d.location, d.period];
+			return [d[options["#location-period-hm"].colum_feature], 
+					d[options["#location-period-hm"].index_feature]];
 		});
-		groups["#location-period-hm"] = dims["#location-period-hm"].group();
+		groups["#location-period-hm"] = dims["#location-period-hm"].group().reduce(
+			// reduce add
+			aggfuns[options["#location-period-hm"].aggfun].add(options["#location-period-hm"].value_feature)
+			// reduce remove
+			, aggfuns[options["#location-period-hm"].aggfun].remove(options["#location-period-hm"].value_feature)
+			// reduce init
+			, aggfuns[options["#location-period-hm"].aggfun].init(options["#location-period-hm"].value_feature)
+		);
 
 		charts["#location-period-hm"]
 			.width(options["#location-period-hm"].width)
@@ -171,13 +293,160 @@
 			.group(groups["#location-period-hm"])
 			.keyAccessor(function (kv) {return kv.key[0];})
 			.valueAccessor(function (kv) {return kv.key[1];})
-			.colorAccessor(function (kv) {return kv.value;})
+			.colorAccessor(function (kv) {return kv.value.result;})
 			.renderLabel(true)
-			.colors(d3.scale.linear().domain(extent(groups["#location-period-hm"])).range(options["#location-period-hm"].colorRange))
-			// .colors(d3.scale.linear().domain(d3.extent(groups["#location-period-hm"].top(Infinity))).range(options["#location-period-hm"].colorRange))
-			.title(function(kv) {
-                    return "Count: " + kv.value;})//tooltip
+			.colors(d3.scale.linear().domain(minmax_value(groups["#location-period-hm"])).range(options["#location-period-hm"].colorRange))
+			.title(function(kv) {return options["#location-period-hm"].tooltip_prefix+kv.value.result;})  //tooltip
 			;
+
+		// chart 5 - avghealth-location-period-hm
+		var minmax_value = function (group) {
+			// assume group is ordered by value
+			var xs = group.order(function (p) {return p.result;}).top(Infinity);
+			return [xs[xs.length - 1].value.result, xs[0].value.result];
+		};
+		options["#avghealth-location-period-hm"] = {
+			anchor: "#avghealth-location-period-hm"
+			, colum_feature: "location"
+			, index_feature: "period"
+			, value_feature: "healthlevel"
+			, tooltip_prefix: "avg health:"
+			, aggfun: "average"
+			, width: 550
+			, height: 300
+			, margins: {top: 10, right: 50, bottom: 30, left: 100}
+			, colorRange: colorRangeScheme["purple"]
+		};
+		charts["#avghealth-location-period-hm"] = dc.heatMap(options["#avghealth-location-period-hm"].anchor);
+		dims["#avghealth-location-period-hm"] = ndx.dimension(function (d) {
+			return [d[options["#avghealth-location-period-hm"].colum_feature], 
+					d[options["#avghealth-location-period-hm"].index_feature]];
+		});
+		groups["#avghealth-location-period-hm"] = dims["#avghealth-location-period-hm"].group().reduce(
+			// reduce add
+			aggfuns[options["#avghealth-location-period-hm"].aggfun].add(options["#avghealth-location-period-hm"].value_feature)
+			// reduce remove
+			, aggfuns[options["#avghealth-location-period-hm"].aggfun].remove(options["#avghealth-location-period-hm"].value_feature)
+			// reduce init
+			, aggfuns[options["#avghealth-location-period-hm"].aggfun].init(options["#avghealth-location-period-hm"].value_feature)
+		);
+
+		charts["#avghealth-location-period-hm"]
+			.width(options["#avghealth-location-period-hm"].width)
+			.height(options["#avghealth-location-period-hm"].height)
+			.margins(options["#avghealth-location-period-hm"].margins)
+			.dimension(dims["#avghealth-location-period-hm"])
+			.group(groups["#avghealth-location-period-hm"])
+			.keyAccessor(function (kv) {return kv.key[0];})
+			.valueAccessor(function (kv) {return kv.key[1];})
+			.colorAccessor(function (kv) {return kv.value.result;})
+			.renderLabel(true)
+			.colors(d3.scale.linear().domain(minmax_value(groups["#avghealth-location-period-hm"])).range(options["#avghealth-location-period-hm"].colorRange))
+			.title(function(kv) {return options["#avghealth-location-period-hm"].tooltip_prefix+kv.value.result;})  //tooltip
+			;
+
+
+		// chart 6 - health level time series 
+		options["#healthlevel-daily"] = {
+			anchor: "#healthlevel-daily"
+			, timefeature: "date"
+			, feature: "healthlevel"
+			, aggfun: "average" // supported by the aggfuns defined at the top
+			, width: 600
+			, height: 400
+			, xAxisLabel: "Daily"
+			, yAxisLabel: "Avg healthlevel daily"
+		};
+		charts["#healthlevel-daily"] = dc.lineChart(options["#healthlevel-daily"].anchor);
+		dims["#healthlevel-daily"] = ndx.dimension(function (d) {
+			return new Date(d[options["#healthlevel-daily"].timefeature]); 
+		});
+		var minDate = new Date(dims["#healthlevel-daily"].bottom(1)[0][options["#healthlevel-daily"].timefeature]);
+		var maxDate = new Date(dims["#healthlevel-daily"].top(1)[0][options["#healthlevel-daily"].timefeature]);
+		groups["#healthlevel-daily"] = dims["#healthlevel-daily"].group().reduce(
+			// reduce add
+			aggfuns[options["#healthlevel-daily"].aggfun].add(options["#healthlevel-daily"].feature)
+			// reduce remove
+			, aggfuns[options["#healthlevel-daily"].aggfun].remove(options["#healthlevel-daily"].feature)
+			// reduce init
+			, aggfuns[options["#healthlevel-daily"].aggfun].init(options["#healthlevel-daily"].feature)
+		);
+		charts["#healthlevel-daily"]
+			.width(options["#healthlevel-daily"].width).height(options["#healthlevel-daily"].height)
+			.dimension(dims["#healthlevel-daily"])
+			.group(groups["#healthlevel-daily"])
+			.valueAccessor(function (kv) {return kv.value.result || 0;})
+			.x(d3.time.scale().domain([minDate, maxDate]))
+			.elasticY(true)
+			.xAxisLabel(options["#healthlevel-daily"].xAxisLabel)
+			.yAxisLabel(options["#healthlevel-daily"].yAxisLabel)
+			;
+
+		// chart 7 - lat-lon-scatter
+
+		// chart 8 - health-hour-scatter
+
+		// chart 9 - cost-lat-lon-bubble
+
+		// chart 10 - healthlevel-withwho-box
+		options["#healthlevel-withwho-box"] = {
+			anchor: "#healthlevel-withwho-box"
+			, x_feature: "withwho"
+			, y_feature: "healthlevel"
+			, aggfun: "subarray"
+			, width: 500
+			, height: 300
+			, margins: {top: 10, right: 50, bottom: 20, left: 50}
+		};
+		charts["#healthlevel-withwho-box"] = dc.boxPlot(options["#healthlevel-withwho-box"].anchor);
+		dims["#healthlevel-withwho-box"] = ndx.dimension(
+			function (d) {
+				return d[options["#healthlevel-withwho-box"].x_feature];
+			});
+		groups["#healthlevel-withwho-box"] = dims["#healthlevel-withwho-box"].group().reduce(
+			//reduce add
+			aggfuns[options["#healthlevel-withwho-box"].aggfun].add(options["#healthlevel-withwho-box"].y_feature)
+			//reduce remove
+			, aggfuns[options["#healthlevel-withwho-box"].aggfun].remove(options["#healthlevel-withwho-box"].y_feature)
+			//reduce init
+			, aggfuns[options["#healthlevel-withwho-box"].aggfun].init(options["#healthlevel-withwho-box"].y_feature)
+			);
+
+		charts["#healthlevel-withwho-box"]
+			.width(options["#healthlevel-withwho-box"].width)
+			.height(options["#healthlevel-withwho-box"].height)
+			.margins(options["#healthlevel-withwho-box"].margins)
+			.dimension(dims["#healthlevel-withwho-box"])
+			.group(groups["#healthlevel-withwho-box"])
+			.elasticY(true)
+			.elasticX(true)
+
+		// data table
+		options["#data-table"] = {
+			anchor: "#data-table"
+			, dimension: "timestamp"
+			, size: 10 //number of rows to display
+			, columns: ["timestamp","snacks", "healthlevel", "period", "withwho", "why"]
+			, sortBy: "timestamp" 
+		};
+		
+		charts["#data-table"] = dc.dataTable(options["#data-table"].anchor);
+
+		dims["#data-table"] = ndx.dimension(
+			function (d) {
+				return d[options["#data-table"].dimension];
+			});
+
+		groups["#data-table"] = function (d) {return "";};
+
+		charts["#data-table"]
+			.dimension(dims["#data-table"])
+			.group(groups["#data-table"])
+			.size(options["#data-table"].size)
+			.columns(options["#data-table"].columns)
+			.sortBy(function (d) {return d[options["#data-table"].sortBy];});
+
+
 		dc.renderAll();
 	});
 	</script>
