@@ -19,8 +19,9 @@
 		5. pivot table of aggreagated_numerical on (categorical vs categorical) - heatmap
 		6. one-D numerical vs time (avg. healthlevel vs date)
 		7. two-D numerical scatter plot (latitude vs longitude - i know it is stupid) 
-		8. categorical vs two numerical : bubble chart - bubble(categorical), radius (group size), x (statics on a numerical), y (statistics on a numerical) - cost vs (latitude, longitude)
-		9. one categorical variable vs one numerical variable boxplot (healthlevel v.s. withwho) -->
+		8. two-D numerical scatter plot (hour vs healthlevel - again stupid but just for plotting purpose)
+		9. categorical vs two numerical : bubble chart - bubble(categorical), radius (group size), x (statics on a numerical), y (statistics on a numerical) - cost vs (latitude, longitude)
+		10. one categorical variable vs one numerical variable boxplot (healthlevel v.s. withwho) -->
 
 	<div id="location-bar"><h3>Distribution of Categorical Variable</h3></div>
 	<div id="neighorhood-row"><h3>Row Chart for disbutrion of many-value categorical</h3></div>
@@ -28,7 +29,8 @@
 	<div id="location-period-hm"><h3>Cooccurance table of two categorical variables</h3></div>
 	<div id="avghealth-location-period-hm"><h3>Another heatmap-Pivot Table of avg healthlevel</h3></div>
 	<div id="healthlevel-daily"><h3>Numerical variable along time</h3></div>
-	<div id="lat-lon-scatter"><h3>Scatter of two numerical variables</h3></div>
+	<div id="lat-lon-scatter"><h3>Scatter of two numerical variables - lat,lon</h3></div>
+	<div id="health-hour-scatter"><h3>Scatter of two numerical variables - healthlevel,hour</h3></div>
 	<div id="cost-lat-lon-bubble"><h3>Bubble of two numerical variables grouped by a categorical variable</h3></div>
 	<div id="healthlevel-withwho-box"><h3>Boxplot of Categorical v.s. Numerical</h3></div>
 
@@ -338,6 +340,14 @@
 			;
 
 		// chart 7 - lat-lon-scatter
+		options
+
+		// chart 8 - health-hour-scatter
+
+		// chart 9 - cost-lat-lon-bubble
+
+		// chart 10 - healthlevel-withwho-box
+
 		
 		dc.renderAll();
 	});
