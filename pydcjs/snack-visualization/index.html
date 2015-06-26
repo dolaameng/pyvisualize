@@ -104,6 +104,45 @@
 				// reduce init
 				, "init": function (feature) {return function () {return {result: 0};} }
 			}
+			, "combine": {
+				"add": function (features, aggs) {
+					add_fns = [];
+					for (var i = 0; i < features.length; ++i) {
+						add_fns.push(aggfuns[aggs[i]]["add"](features[i]));
+					}
+					return function (p, v) {
+						for (var i = 0; i < features.length; ++i) {
+							p[i] = add_fns[i](p[i], v);
+						}
+						return p;
+					};
+				}
+				, "remove": function (features, aggs) {
+					remove_fns = [];
+					for (var i = 0; i < features.length; ++i) {
+						remove_fns.push(aggfuns[aggs[i]]["remove"](features[i]));
+					}
+					return function (p, v) {
+						for (var i = 0; i < features.length; ++i) {
+							p[i] = remove_fns[i](p[i], v);
+						}
+						return p;
+					};
+				}
+				, "init": function (features, aggs) {
+					init_fns = [];
+					for (var i = 0; i < features.length; ++i) {
+						init_fns.push(aggfuns[aggs[i]]["init"](features[i]));
+					}
+					return function () {
+						p = []
+						for (var i = 0; i < features.length; ++i) {
+							p.push( init_fns[i]() );
+						}
+						return p;
+					};
+				}
+			}
 		};
 
 		// color scheme for heatmap, obtained from http://colorbrewer2.org/
@@ -411,18 +450,54 @@
 		// chart 9 - cost-lat-lon-bubble
 		options["#cost-lat-lon-bubble"] = {
 			anchor: "#cost-lat-lon-bubble"
-			, group_feature: ""
-			, x_feature: ""
-			, y_feature: ""
-			, x_aggfun: ""
-			, y_aggfun: ""
+			, group_feature: "cost"
+			, x_feature: "what_wordlen"
+			, y_feature: "why_wordlen"
+			, r_feature: null
+			, x_aggfun: "average"
+			, y_aggfun: "average"
+			, r_aggfun: "count"
 			, width: 800
 			, height: 600
-			, xAxisLabel: ""
-			, yAxisLabel: ""
+			, max_bubble: 5000
+			, xAxisLabel: "avg what desc"
+			, yAxisLabel: "avg why desc"
 			, margins: {top: 10, right: 10, bottom: 50, left: 50}
 		};
-		//charts["#cost-lat-lon-bubble"] = dc.bubbleChart(options["#cost-lat-lon-bubble"].anchor);
+		charts["#cost-lat-lon-bubble"] = dc.bubbleChart(options["#cost-lat-lon-bubble"].anchor);
+		dims["#cost-lat-lon-bubble"] = ndx.dimension(function (d) {return d[options["#cost-lat-lon-bubble"].group_feature]});
+		groups["#cost-lat-lon-bubble"] = dims["#cost-lat-lon-bubble"].group().reduce(
+			// reduce add
+			aggfuns["combine"].add([options["#cost-lat-lon-bubble"].x_feature, options["#cost-lat-lon-bubble"].y_feature, options["#cost-lat-lon-bubble"].r_feature], 
+								[options["#cost-lat-lon-bubble"].x_aggfun, options["#cost-lat-lon-bubble"].y_aggfun, options["#cost-lat-lon-bubble"].r_aggfun])
+			// reduce remove
+			, aggfuns["combine"].remove([options["#cost-lat-lon-bubble"].x_feature, options["#cost-lat-lon-bubble"].y_feature, options["#cost-lat-lon-bubble"].r_feature], 
+								[options["#cost-lat-lon-bubble"].x_aggfun, options["#cost-lat-lon-bubble"].y_aggfun, options["#cost-lat-lon-bubble"].r_aggfun])
+			// reduce init
+			, aggfuns["combine"].init([options["#cost-lat-lon-bubble"].x_feature, options["#cost-lat-lon-bubble"].y_feature, options["#cost-lat-lon-bubble"].r_feature], 
+								[options["#cost-lat-lon-bubble"].x_aggfun, options["#cost-lat-lon-bubble"].y_aggfun, options["#cost-lat-lon-bubble"].r_aggfun])
+		);
+		charts["#cost-lat-lon-bubble"]
+			.width(options["#cost-lat-lon-bubble"].width)
+			.height(options["#cost-lat-lon-bubble"].height)
+			.dimension(dims["#cost-lat-lon-bubble"])
+			.group(groups["#cost-lat-lon-bubble"])
+			.keyAccessor(function (kv) {return kv.value[0].result;})
+			.valueAccessor(function (kv) {return kv.value[1].result;})
+			.radiusValueAccessor(function (kv) {return kv.value[2].result;})
+			.x(d3.scale.linear().domain([0, 1]))
+			.y(d3.scale.linear().domain([0, 1]))
+			.r(d3.scale.linear().domain([0, options["#cost-lat-lon-bubble"].max_bubble]))
+			.yAxisPadding(0.5)
+        	.xAxisPadding(0.5)
+			.elasticX(true)
+			.elasticY(true)
+			.xAxisLabel(options["#cost-lat-lon-bubble"].xAxisLabel)
+			.yAxisLabel(options["#cost-lat-lon-bubble"].yAxisLabel)
+			.renderLabel(true)
+			.label(function (kv) {return kv.key;})
+			.legend(dc.legend())
+			;
 
 		// chart 10 - healthlevel-withwho-box
 		options["#healthlevel-withwho-box"] = {
