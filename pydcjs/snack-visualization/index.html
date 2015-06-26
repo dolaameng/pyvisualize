@@ -207,7 +207,7 @@
 			;
 		for (var i = 1; i < feature_values.length; ++i) {
 			charts["#withwho-area-daily"].stack(groups["#withwho-area-daily"], feature_values[i], 
-				feature_values[i]);
+				select_stack(feature_values[i]));
 		}
 
 		// chart 4 - location period heatmap
