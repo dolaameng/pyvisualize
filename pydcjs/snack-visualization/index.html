@@ -216,6 +216,23 @@
 			var xs = group.order(function (p) {return p.result;}).top(Infinity);
 			return [xs[xs.length - 1].value.result, xs[0].value.result];
 		};
+
+		// color scheme for heatmap, obtained from http://colorbrewer2.org/
+		var colorRangeScheme = {
+			green: ["#e5f5e0", "#00441b"],
+			organge: ["#fee6ce", "#7f2704"],
+			purple: ["#efedf5", "#3f007d"],
+			red: ["#fee0d2", "#67000d"],
+			blue: ["#deebf7", "#08306b"],
+			grey: ["#f0f0f0", "#000000"],
+			yor: ["#ffffcc", "#800026"],
+			bg: ["#e5f5f9", "#00441b"],
+			yg: ["#f7fcb9", "#004529"],
+			yob: ["#fff7bc", "#662506"],
+			or: ["#fee8c8", "#7f0000"],
+			pb: ["#ece7f2", "#023858"]
+		};
+
 		options["#location-period-hm"] = {
 			anchor: "#location-period-hm"
 			, colum_feature: "location"
@@ -223,10 +240,10 @@
 			, value_feature: null
 			, tooltip_prefix: "frequency:"
 			, aggfun: "count"
-			, width: 500
+			, width: 550
 			, height: 300
 			, margins: {top: 10, right: 50, bottom: 30, left: 100}
-			, colorRange: ["#95ff95", "green"]
+			, colorRange: colorRangeScheme["green"]
 		};
 		charts["#location-period-hm"] = dc.heatMap(options["#location-period-hm"].anchor);
 		dims["#location-period-hm"] = ndx.dimension(function (d) {
@@ -269,10 +286,10 @@
 			, value_feature: "healthlevel"
 			, tooltip_prefix: "avg health:"
 			, aggfun: "average"
-			, width: 500
+			, width: 550
 			, height: 300
 			, margins: {top: 10, right: 50, bottom: 30, left: 100}
-			, colorRange: ["#9595ff", "#0000ff"]
+			, colorRange: colorRangeScheme["purple"]
 		};
 		charts["#avghealth-location-period-hm"] = dc.heatMap(options["#avghealth-location-period-hm"].anchor);
 		dims["#avghealth-location-period-hm"] = ndx.dimension(function (d) {
