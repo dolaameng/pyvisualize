@@ -21,7 +21,8 @@
 		7. two-D numerical scatter plot (latitude vs longitude - i know it is stupid) 
 		8. two-D numerical scatter plot (hour vs healthlevel - again stupid but just for plotting purpose)
 		9. categorical vs two numerical : bubble chart - bubble(categorical), radius (group size), x (statics on a numerical), y (statistics on a numerical) - cost vs (avg. latitude, avg. longitude)
-		10. one categorical variable vs one numerical variable boxplot (healthlevel v.s. withwho) -->
+		10. one categorical variable vs one numerical variable boxplot (healthlevel v.s. withwho) 
+		11. data table-->
 
 	<div id="location-bar"><h3>Distribution of Categorical Variable</h3></div>
 	<div id="neighorhood-row"><h3>Row Chart for disbutrion of many-value categorical</h3></div>
@@ -33,6 +34,7 @@
 	<div id="health-hour-scatter"><h3>Scatter of two numerical variables - healthlevel,hour</h3></div>
 	<div id="cost-lat-lon-bubble"><h3>Bubble of two numerical variables grouped by a categorical variable</h3></div>
 	<div id="healthlevel-withwho-box"><h3>Boxplot of Categorical v.s. Numerical</h3></div>
+	<table id="data-table"></table>
 
 	<script type="text/javascript" src="http://dc-js.github.io/dc.js/js/d3.js"></script>
 	<script type="text/javascript" src="http://dc-js.github.io/dc.js/js/crossfilter.js"></script>
@@ -538,6 +540,8 @@
 			.yAxisLabel(options["#healthlevel-withwho-box"].yAxisLabel)
 			;
 
+		// chart 11 - data time
+		// dont understand the id-column yet - TODO later
 		
 		dc.renderAll();
 	});
