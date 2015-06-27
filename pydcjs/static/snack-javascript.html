@@ -546,7 +546,7 @@
 		options["#data-table"] = {
 			anchor: "#data-table"
 			, dimension: "timestamp"
-			, size: 10 //number of rows to display
+			, maxsize: 10 //number of rows to display
 			, columns: ["timestamp","snacks", "healthlevel", "period", "withwho", "why"]
 			, sortBy: "timestamp"
 		};
@@ -563,9 +563,10 @@
 		charts["#data-table"]
 			.dimension(dims["#data-table"])
 			.group(groups["#data-table"])
-			.size(options["#data-table"].size)
+			.size(options["#data-table"].maxsize)
 			.columns(options["#data-table"].columns)
-			.sortBy(function (d) {return d[options["#data-table"].sortBy];});
+			.sortBy(function (d) {return d[options["#data-table"].sortBy];})
+			;
 
 		dc.renderAll();
 	});

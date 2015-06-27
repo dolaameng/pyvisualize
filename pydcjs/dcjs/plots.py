@@ -178,7 +178,7 @@ def categorical_pair_heatmap(anchor_id,
 		, colorRange: colorRangeScheme["%(color_scheme)s"]
 	};
 	charts["%(anchor_id)s"] = dc.heatMap(options["%(anchor_id)s"].anchor);
-	dims["%(anchor_id)s"] = ndx.dimension(function (d) {
+	dims["%(anchor_id)s"] = %(cf_obj)s.dimension(function (d) {
 		return [d[options["%(anchor_id)s"].column_feature],
 				d[options["%(anchor_id)s"].index_feature]];
 	});
@@ -213,29 +213,266 @@ def categorical_pair_heatmap(anchor_id,
 		color_scheme = color_scheme, cf_obj = cf_obj)
 	return (div, jscode)
 
-def numerical_timeseries_line():
+def numerical_timeseries_line(anchor_id, timefeature, feature, 
+	aggfun = "average", width = 600, height = 300, 
+	xAxisLabel = "", yAxisLabel = "", cf_obj = "ndx", div_template=None):
 	"""
 	Timeseries for one numerical variable
 	"""
-	pass
+	if div_template is None: div_template = r'<div id="%s"></div>'
+	div = div_template % anchor_id
+	jscode = r"""
+	options["%(anchor_id)s"] = {
+		anchor: "#%(anchor_id)s"
+		, timefeature: "%(timefeature)s"
+		, feature: "%(feature)s"
+		, aggfun: "%(aggfun)s" 
+		, width: %(width)d
+		, height: %(height)d
+		, xAxisLabel: "%(xAxisLabel)s"
+		, yAxisLabel: "%(yAxisLabel)s"
+	};
+	charts["%(anchor_id)s"] = dc.lineChart(options["%(anchor_id)s"].anchor);
+	dims["%(anchor_id)s"] = %(cf_obj)s.dimension(function (d) {
+		return new Date(d[options["%(anchor_id)s"].timefeature]);
+	});
+	var minDate = new Date(dims["%(anchor_id)s"].bottom(1)[0][options["%(anchor_id)s"].timefeature]);
+	var maxDate = new Date(dims["%(anchor_id)s"].top(1)[0][options["%(anchor_id)s"].timefeature]);
+	groups["%(anchor_id)s"] = dims["%(anchor_id)s"].group().reduce(
+		// reduce add
+		aggfuns[options["%(anchor_id)s"].aggfun].add(options["%(anchor_id)s"].feature)
+		// reduce remove
+		, aggfuns[options["%(anchor_id)s"].aggfun].remove(options["%(anchor_id)s"].feature)
+		// reduce init
+		, aggfuns[options["%(anchor_id)s"].aggfun].init(options["%(anchor_id)s"].feature)
+	);
+	charts["%(anchor_id)s"]
+		.width(options["%(anchor_id)s"].width).height(options["%(anchor_id)s"].height)
+		.dimension(dims["%(anchor_id)s"])
+		.group(groups["%(anchor_id)s"])
+		.valueAccessor(function (kv) {return kv.value.result || 0;})
+		.x(d3.time.scale().domain([minDate, maxDate]))
+		.elasticY(true)
+		.xAxisLabel(options["%(anchor_id)s"].xAxisLabel)
+		.yAxisLabel(options["%(anchor_id)s"].yAxisLabel)
+		;
+	""" % dict(anchor_id = anchor_id, timefeature = timefeature,
+			feature = feature, aggfun = aggfun, width = width, height = height,
+			xAxisLabel = xAxisLabel, yAxisLabel = yAxisLabel, cf_obj = cf_obj)
+	return (div, jscode)
 
-def numerical_pair_scatter():
+def numerical_pair_scatter(anchor_id, x_feature, y_feature, 
+	width = 500, height = 400, xAxisLabel = "", yAxisLabel = "",
+	margins = None, cf_obj = "ndx", div_template=None):
 	"""
 	Scatterplot for a pair numerical variables
 	"""
-	pass
+	default_margins = {"top": 10, "right": 50, "bottom": 30, "left": 50}
+	if margins is not None: default_margins.update(margins)
+	if div_template is None: div_template = r'<div id="%s"></div>'
+	div = div_template % anchor_id
+	jscode = r"""
+	options["%(anchor_id)s"] = {
+		anchor: "#%(anchor_id)s"
+		, x_feature: "%(x_feature)s"
+		, y_feature: "%(y_feature)s"
+		, width: %(width)d
+		, height: %(height)d
+		, xAxisLabel: "%(xAxisLabel)s"
+		, yAxisLabel: "%(yAxisLabel)s"
+		, margins: {top: %(top)d, right: %(right)d, bottom: %(bottom)d, left: %(left)d}
+	};
+	charts["%(anchor_id)s"] = dc.scatterPlot(options["%(anchor_id)s"].anchor);
+	dims["%(anchor_id)s"] = %(cf_obj)s.dimension(function (d) {return [+d[options["%(anchor_id)s"].x_feature], +d[options["%(anchor_id)s"].y_feature]]});
+	groups["%(anchor_id)s"] = dims["%(anchor_id)s"].group();
+	charts["%(anchor_id)s"]
+		.width(options["%(anchor_id)s"].width).height(options["%(anchor_id)s"].height)
+		.dimension(dims["%(anchor_id)s"])
+		.group(groups["%(anchor_id)s"])
+		.x(d3.scale.linear().domain([0, 1]))
+		.elasticX(true)
+		.elasticY(true)
+		.xAxisLabel(options["%(anchor_id)s"].xAxisLabel)
+		.yAxisLabel(options["%(anchor_id)s"].yAxisLabel)
+		.margins(options["%(anchor_id)s"].margins)
+		;
+	""" % dict(anchor_id = anchor_id, x_feature = x_feature, y_feature = y_feature,
+		width = width, height = height, xAxisLabel = xAxisLabel, yAxisLabel = yAxisLabel,
+		top = default_margins["top"], left = default_margins["left"], 
+		bottom = default_margins["bottom"], right = default_margins["right"],
+		cf_obj = cf_obj)
+	return (div, jscode)
 
-def numerical_pair_by_categorical_bubble():
+
+def numerical_pair_by_categorical_bubble(anchor_id, 
+	group_feature, x_feature, y_feature, r_feature = "",
+	x_aggfun = "average", y_aggfun = "average", r_aggfun = "count",
+	width = 800, height = 600, max_bubble = 5000,
+	xAxisLabel = "", yAxisLabel = "",
+	margins = None, cf_obj = "ndx", div_template=None):
 	"""
 	Bubble: grouped by one categorcial, in each group, three numerical variables can be specified: x, y, radius
 	"""
-	pass
+	default_margins = {"top": 10, "right": 50, "bottom": 30, "left": 50}
+	if margins is not None: default_margins.update(margins)
+	if div_template is None: div_template = r'<div id="%s"></div>'
+	div = div_template % anchor_id
+	jscode = r"""
+	options["%(anchor_id)s"] = {
+		anchor: "#%(anchor_id)s"
+		, group_feature: "%(group_feature)s"
+		, x_feature: "%(x_feature)s"
+		, y_feature: "%(y_feature)s"
+		, r_feature: "%(r_feature)s"
+		, x_aggfun: "%(x_aggfun)s"
+		, y_aggfun: "%(y_aggfun)s"
+		, r_aggfun: "%(r_aggfun)s"
+		, width: %(width)d
+		, height: %(height)d
+		, max_bubble: %(max_bubble)d
+		, xAxisLabel: "%(xAxisLabel)s"
+		, yAxisLabel: "%(yAxisLabel)s"
+		, margins: {top: %(top)d, right: %(right)d, bottom: %(bottom)d, left: %(left)d}
+	};
+	charts["%(anchor_id)s"] = dc.bubbleChart(options["%(anchor_id)s"].anchor);
+	dims["%(anchor_id)s"] = %(cf_obj)s.dimension(function (d) {return d[options["%(anchor_id)s"].group_feature]});
+	groups["%(anchor_id)s"] = dims["%(anchor_id)s"].group().reduce(
+		// reduce add
+		aggfuns["combine"].add([options["%(anchor_id)s"].x_feature, options["%(anchor_id)s"].y_feature, options["%(anchor_id)s"].r_feature],
+							[options["%(anchor_id)s"].x_aggfun, options["%(anchor_id)s"].y_aggfun, options["%(anchor_id)s"].r_aggfun])
+		// reduce remove
+		, aggfuns["combine"].remove([options["%(anchor_id)s"].x_feature, options["%(anchor_id)s"].y_feature, options["%(anchor_id)s"].r_feature],
+							[options["%(anchor_id)s"].x_aggfun, options["%(anchor_id)s"].y_aggfun, options["%(anchor_id)s"].r_aggfun])
+		// reduce init
+		, aggfuns["combine"].init([options["%(anchor_id)s"].x_feature, options["%(anchor_id)s"].y_feature, options["%(anchor_id)s"].r_feature],
+							[options["%(anchor_id)s"].x_aggfun, options["%(anchor_id)s"].y_aggfun, options["%(anchor_id)s"].r_aggfun])
+	);
+	charts["%(anchor_id)s"]
+		.width(options["%(anchor_id)s"].width)
+		.height(options["%(anchor_id)s"].height)
+		.dimension(dims["%(anchor_id)s"])
+		.group(groups["%(anchor_id)s"])
+		.keyAccessor(function (kv) {return kv.value[0].result;})
+		.valueAccessor(function (kv) {return kv.value[1].result;})
+		.radiusValueAccessor(function (kv) {return kv.value[2].result;})
+		.x(d3.scale.linear().domain([0, 1]))
+		.y(d3.scale.linear().domain([0, 1]))
+		.r(d3.scale.linear().domain([0, options["%(anchor_id)s"].max_bubble]))
+		.yAxisPadding(0.5)
+    	.xAxisPadding(0.5)
+		.elasticX(true)
+		.elasticY(true)
+		.xAxisLabel(options["%(anchor_id)s"].xAxisLabel)
+		.yAxisLabel(options["%(anchor_id)s"].yAxisLabel)
+		.renderLabel(true)
+		.label(function (kv) {return kv.key;})
+		.legend(dc.legend())
+		;
+	""" % dict(anchor_id = anchor_id, group_feature = group_feature, 
+		x_feature = x_feature, y_feature = y_feature, r_feature = r_feature,
+		x_aggfun = x_aggfun, y_aggfun = y_aggfun, r_aggfun = r_aggfun,
+		width = width, height = height, max_bubble = max_bubble,
+		xAxisLabel = xAxisLabel, yAxisLabel = yAxisLabel,
+		top = default_margins["top"], left = default_margins["left"], 
+		bottom = default_margins["bottom"], right = default_margins["right"],
+		cf_obj = cf_obj)
+	return (div, jscode)
 
-def numerical_by_categorical_box():
+def numerical_by_categorical_box(anchor_id, 
+	group_feature, numerical_feature,
+	width = 800, height = 600, 
+	xAxisLabel = "", yAxisLabel = "",
+	margins = None, cf_obj = "ndx", div_template=None):
 	"""
 	Boxplot of a numerical variable grouped by values of a categorical variable
 	"""
-	pass
+	default_margins = {"top": 10, "right": 50, "bottom": 30, "left": 50}
+	if margins is not None: default_margins.update(margins)
+	if div_template is None: div_template = r'<div id="%s"></div>'
+	div = div_template % anchor_id
+	jscode = r"""
+	options["%(anchor_id)s"] = {
+		anchor: "#%(anchor_id)s"
+		, group_feature: "%(group_feature)s"
+		, numerical_feature: "%(numerical_feature)s"
+		, width: %(width)d
+		, height: %(height)d
+		, xAxisLabel: "%(xAxisLabel)s"
+		, yAxisLabel: "%(yAxisLabel)s"
+		, margins: {top: %(top)d, right: %(right)d, bottom: %(bottom)d, left: %(left)d}
+	};
+	charts["%(anchor_id)s"] = dc.boxPlot(options["%(anchor_id)s"].anchor);
+	dims["%(anchor_id)s"] = %(cf_obj)s.dimension(function (d) {return d[options["%(anchor_id)s"].group_feature]});
+	groups["%(anchor_id)s"] = dims["%(anchor_id)s"].group().reduce(
+		//reduce add
+		function (p, v) {
+			p.push(v[options["%(anchor_id)s"].numerical_feature]);
+			return p;
+		}
+		//reduce remove
+		, function (p, v) {
+			p.splice(p.indexOf(v[options["%(anchor_id)s"].numerical_feature]), 1);
+			return p;
+		}
+		// reduce init
+		, function () {return [];}
+	);
+	charts["%(anchor_id)s"]
+		.width(options["%(anchor_id)s"].width)
+		.height(options["%(anchor_id)s"].height)
+		.dimension(dims["%(anchor_id)s"])
+		.group(groups["%(anchor_id)s"])
+		.elasticX(true)
+		.elasticY(true)
+		.margins(options["%(anchor_id)s"].margins)
+		.xAxisLabel(options["%(anchor_id)s"].xAxisLabel)
+		.yAxisLabel(options["%(anchor_id)s"].yAxisLabel)
+		;
+	""" % dict(anchor_id = anchor_id, group_feature = group_feature, 
+		numerical_feature = numerical_feature,
+		width = width, height = height, 
+		xAxisLabel = xAxisLabel, yAxisLabel = yAxisLabel,
+		top = default_margins["top"], left = default_margins["left"], 
+		bottom = default_margins["bottom"], right = default_margins["right"],
+		cf_obj = cf_obj)
+	return (div, jscode)
+
+def data_table(anchor_id, index, maxsize, columns, sortBy, 
+	cf_obj="ndx", div_template=None):
+	if div_template is None: div_template = r"""<div>
+		<table id="%s" class="table table-hover dc-data-table">
+		</table>
+	</div>"""
+	div = div_template % anchor_id
+	jscode = r"""
+	options["%(anchor_id)s"] = {
+			anchor: "#%(anchor_id)s"
+			, index: "%(index)s"
+			, maxsize: %(maxsize)d //number of rows to display
+			, columns: [%(columnstr)s]
+			, sortBy: "%(sortBy)s"
+		};
+
+		charts["%(anchor_id)s"] = dc.dataTable(options["%(anchor_id)s"].anchor);
+
+		dims["%(anchor_id)s"] = %(cf_obj)s.dimension(
+			function (d) {
+				return d[options["%(anchor_id)s"].index];
+			});
+
+		groups["%(anchor_id)s"] = function (d) {return "";};
+
+		charts["%(anchor_id)s"]
+			.dimension(dims["%(anchor_id)s"])
+			.group(groups["%(anchor_id)s"])
+			.size(options["%(anchor_id)s"].maxsize)
+			.columns(options["%(anchor_id)s"].columns)
+			.sortBy(function (d) {return d[options["%(anchor_id)s"].sortBy];})
+			;
+	""" % dict(anchor_id = anchor_id, index = index,
+		maxsize = maxsize, columnstr = ", ".join(map(lambda c: '"%s"'%c, columns)), 
+		sortBy = sortBy, cf_obj = cf_obj)
+	return (div, jscode)
 
 ALL_CHARTS = {
 	"categorical_histogram_bar": categorical_histogram_bar
@@ -246,6 +483,7 @@ ALL_CHARTS = {
 	, "numerical_pair_scatter": numerical_pair_scatter
 	, "numerical_pair_by_categorical_bubble": numerical_pair_by_categorical_bubble
 	, "numerical_by_categorical_box": numerical_by_categorical_box
+	, "data_table": data_table
 	# ??
 }
 
@@ -263,7 +501,6 @@ def cdn_script():
 
 def embed_charts(data_url, charts_code, cf_obj = "ndx"):
 	return r"""
-	<script type="text/javascript">
 	d3.json("%(data_url)s", function (err, data) {
 
 		var %(cf_obj)s = crossfilter(data);
@@ -400,7 +637,6 @@ def embed_charts(data_url, charts_code, cf_obj = "ndx"):
 
 		dc.renderAll();
 	});
-	</script>
 	""" % dict(data_url = data_url, charts_code = charts_code, cf_obj = cf_obj)
 
 ## Crossfiltered chart dashboard for a dataset - main interface

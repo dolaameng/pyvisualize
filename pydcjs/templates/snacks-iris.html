@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Demo of Snack Example using pydcjs</title>
+    
+    {{css_header | safe}}
+  
+  </head>
+  <body>
+    <h1>Demo of Snack Example using pydcjs</h1>
+
+    {{snacks_html_divs["location-bar-plot"] | safe}}
+    {{snacks_html_divs["withwho-area-daily-plot"] | safe}}
+    {{snacks_html_divs["healthlevel-daily-plot"] | safe}}
+    {{snacks_html_divs["location-period-hm-plot"] | safe}}
+    {{snacks_html_divs["avghealth-location-period-hm-plot"] | safe}}
+    {{snacks_html_divs["lat-lon-scatter-plot"] | safe}}
+    {{snacks_html_divs["health-hour-scatter-plot"] | safe}}
+    {{snacks_html_divs["cost-lat-lon-bubble-plot"] | safe}}
+    {{snacks_html_divs["healthlevel-withwho-box-plot"] | safe}}
+    {{snacks_html_divs["neighborhood-row-plot"] | safe}}
+    {{snacks_html_divs["snacks-data-table"] | safe}}
+    
+    <h1>Demo of IRIS Example using pydcjs</h1>
+
+    {{iris_html_divs["iris-sepal-scatter-plot"] | safe}}
+    {{iris_html_divs["iris-petal-scatter-plot"] | safe}}
+    {{iris_html_divs["iris-sepallen-sepalwdh-bubble-plot"] | safe}}
+    {{iris_html_divs["iris-data-table"] | safe}}
+
+    {{js_header | safe}}
+    
+    <script type="text/javascript">
+    {{snacks_js_plot | safe}}
+
+    {{iris_js_plot | safe}}
+    </script>
+
+
+  </body>
+</html>
